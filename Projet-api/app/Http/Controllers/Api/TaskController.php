@@ -2,16 +2,29 @@
 
 namespace App\Http\Controllers\Api;
 
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Task;
 
 class TaskController extends Controller
 {
+
     public function index()
-    {
-        return Task::all();
-    }
+{
+                return Task::all();
+
+    //$user = auth()->user();
+
+    // Autorise via la policy
+    //if ($user->can('viewAny', Task::class)) {
+      //  return Task::with('user')->latest()->get(); // admin => toutes les tâches
+    //}
+
+    //return Task::where('user_id', $user->id)->latest()->get(); // utilisateur => seulement ses tâches
+}
+
 
     public function store(Request $request)
     {
@@ -22,8 +35,15 @@ class TaskController extends Controller
         ]);
     
         // Création de la tâche
-        $task = Task::create($request->only('title', 'description'));
+       // $task = Task::create($request->only('title', 'description'));
     
+
+        $task = new Task();
+        $task->title = $request->title;
+        $task->description = $request->description;
+        $task->user_id = auth()->id(); // 🔐 utilisateur connecté
+        $task->save();
+        $task->completed = false;
         return response()->json($task, 201);
     }
 
@@ -62,6 +82,16 @@ class TaskController extends Controller
 
     return response()->json($task);
 }
+
+public function toggleCompleted($id)
+{
+    $task = Task::findOrFail($id);
+    $task->completed = !$task->completed;
+    $task->save();
+
+    return response()->json($task);
+}
+
 
 }
 
