@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\AuthController;
+//use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Task;
@@ -11,52 +10,59 @@ use App\Models\Task;
 class TaskController extends Controller
 {
 
+    public function __construct()
+    {
+    $this->middleware('auth:api'); // Applique l'authentification sur toutes les méthodes
+    }
+
     public function index()
-{
-                return Task::all();
+    {
+        $user = auth()->user();
 
-    //$user = auth()->user();
+        if ($user->role === 'admin') {
+            return Task::with('user')->latest()->get(); // admin → toutes les tâches
+        }
 
-    // Autorise via la policy
-    //if ($user->can('viewAny', Task::class)) {
-      //  return Task::with('user')->latest()->get(); // admin => toutes les tâches
-    //}
-
-    //return Task::where('user_id', $user->id)->latest()->get(); // utilisateur => seulement ses tâches
-}
-
+        return Task::where('user_id', $user->id)->latest()->get(); // utilisateur → ses tâches
+    }
 
     public function store(Request $request)
-    {
-        // Validation des données
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
-    
-        // Création de la tâche
-       // $task = Task::create($request->only('title', 'description'));
-    
-
-        $task = new Task();
-        $task->title = $request->title;
-        $task->description = $request->description;
-        $task->user_id = auth()->id(); // 🔐 utilisateur connecté
-        $task->save();
-        $task->completed = false;
-        return response()->json($task, 201);
+{
+    // ✅ Vérifie que l'utilisateur est bien connecté
+    if (!auth()->check()) {
+        return response()->json(['error' => 'Utilisateur non authentifié'], 401);
     }
+
+    // ✅ Validation des données
+    $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+    ]);
+
+    // ✅ Création de la tâche
+    $task = new Task();
+    $task->title = $request->title;
+    $task->description = $request->description;
+    $task->user_id = auth()->id(); // ✅ utilisateur connecté
+    $task->completed = false;
+    $task->save();
+
+    return response()->json($task, 201);
+}
+
 
     public function update(Request $request, $id)
     {
         $task = Task::findOrFail($id);
 
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
 
-        $task->update($request->only('title', 'description'));
+        $task->title = $validated['title'];
+        $task->description = $validated['description'] ?? null;
+        $task->save();
 
         return response()->json($task);
     }
@@ -66,32 +72,34 @@ class TaskController extends Controller
         $task = Task::findOrFail($id);
         $task->delete();
 
-        return response()->json(['message' => 'Task deleted']);
+        return response()->json(['message' => 'Tâche supprimée']);
     }
 
-    public function toggle($id)
+
+public function toggle(Task $task)
 {
-    // Trouver la tâche par son ID
-    $task = Task::findOrFail($id);
+    try {
+        // Vérifie que l'utilisateur est connecté
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Utilisateur non authentifié'], 401);
+        }
 
-    // Bascule le statut "completed"
-    $task->completed = !$task->completed;
+        // Vérifie que la tâche appartient à l'utilisateur connecté
+        if ($task->user_id !== auth()->id()) {
+            return response()->json(['error' => 'Non autorisé'], 403);
+        }
 
-    // Sauvegarde la tâche mise à jour
-    $task->save();
+        // Toggle completed
+        $task->completed = !$task->completed;
+        $task->save();
 
-    return response()->json($task);
+        return response()->json($task);
+    } catch (\Exception $e) {
+        // En cas d'erreur, logue et retourne un message lisible
+        \Log::error('Erreur toggle tâche : ' . $e->getMessage());
+        return response()->json(['error' => 'Erreur serveur'], 500);
+    }
 }
 
-public function toggleCompleted($id)
-{
-    $task = Task::findOrFail($id);
-    $task->completed = !$task->completed;
-    $task->save();
-
-    return response()->json($task);
+    
 }
-
-
-}
-

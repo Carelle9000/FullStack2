@@ -12,27 +12,51 @@ function Dashboard() {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [user, setUser] = useState(null);
-  
-    const handleLogout = async () => {
+
+  // Fetch user info when component is mounted
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem('token');
+
       try {
-        const token = localStorage.getItem('token'); // ou wherever you store it
-    
-        await fetch('http://localhost:8000/api/logout', {
-          method: 'POST',
+        const res = await fetch('http://localhost:8000/api/user', {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-          },
-        });
-    
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-      } catch (error) {
-        console.error('Erreur lors de la déconnexion:', error);
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+      });
+
+        if (!res.ok) throw new Error('Failed to fetch user');
+
+        const data = await res.json();
+        setUser(data); // { name: "...", email: "...", etc. }
+      } catch (err) {
+        console.error('Erreur lors de la récupération de l’utilisateur:', err);
       }
     };
-     
- 
+
+    fetchUser();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+    
+      await fetch('http://localhost:8000/api/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+      });
+    
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-50 font-sans">
       {/* Sidebar */}
@@ -45,7 +69,7 @@ function Dashboard() {
         </div>
 
         <nav className="mt-6">
-          {[
+          {[ 
             { icon: <FiHome />, name: 'Dashboard', key: 'dashboard' },
             { icon: <FiPieChart />, name: 'Analytics', key: 'analytics' },
             { icon: <FiUsers />, name: 'Clients', key: 'clients' },
@@ -72,12 +96,10 @@ function Dashboard() {
         {/* Topbar */}
         <header className="bg-white border-b border-gray-200 flex items-center justify-between p-4">
           <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-            />
+            {/* Replacing Search Bar with User's Name */}
+            <div className="text-gray-700 text-lg font-medium">
+              Bonjour, {user?.name || 'Utilisateur'} 👋
+            </div>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -130,11 +152,8 @@ function Dashboard() {
                     <p className="text-sm text-gray-500">Rôle : {user?.role || 'Client'}</p>
                   </div>
                   <div className="p-2">
-                    <a href="#" className="block px-3 py-2 text-sm hover:bg-gray-100 rounded">Profil</a>
-                    <a href="#" className="block px-3 py-2 text-sm hover:bg-gray-100 rounded">Paramètres</a>
-                    <a href="#" onClick={(e) => { e.preventDefault();  handleLogout(); }}
-                         className="block px-3 py-2 text-sm hover:bg-gray-100 rounded"> Déconnexion
-                    </a>
+                  
+                    <a href="#" onClick={(e) => { e.preventDefault(); handleLogout(); }} className="block px-3 py-2 text-sm hover:bg-red-400 rounded"> Déconnexion</a>
                   </div>
                 </div>
               )}
@@ -162,11 +181,11 @@ function Dashboard() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {[
-              { title: 'Total Revenue', value: '$48,245', change: '+12%', icon: '💰' },
-              { title: 'New Clients', value: '245', change: '+5%', icon: '👥' },
-              { title: 'Projects', value: '32', change: '+3', icon: '📁' },
-              { title: 'Tasks Completed', value: '87%', change: '+7%', icon: '✅' },
+            {[ 
+              { title: 'Revenu Total', value: '$48,245', change: '+12%', icon: '💰' },
+              { title: 'Nouveaux Utilisateurs', value: '245', change: '+5%', icon: '👥' },
+              { title: 'Utilisateurs connectes', value: '32', change: '+3', icon: '📁' },
+              { title: 'Taches faites', value: '87%', change: '+7%', icon: '✅' },
             ].map((stat, index) => (
               <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <div className="flex justify-between">

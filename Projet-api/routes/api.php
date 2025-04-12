@@ -32,12 +32,17 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->get('/tasks', function () {
     return Auth::user()->tasks; // ou ta logique
 });
-Route::middleware('auth:sanctum')->get('/tasks', [TaskController::class, 'index']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/tasks', [TaskController::class, 'index']); // Accessible par les admins
+    Route::get('/tasks/{userId}', [TaskController::class, 'show']); // Accessible par les utilisateurs et admins
+});
+
 Route::post('/tasks', [TaskController::class, 'store']);
 Route::put('/tasks/{id}', [TaskController::class, 'update']);
 Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
 
-Route::patch('/tasks/{id}/toggle', [TaskController::class, 'toggle']);
+Route::middleware('auth:sanctum')->patch('/tasks/toggle/{task}', [TaskController::class, 'toggle']);
 Route::patch('/tasks/toggle/{id}', [TaskController::class, 'toggleCompleted']);
 
 Route::middleware('auth:sanctum')->get('/me', function (Request $request) {

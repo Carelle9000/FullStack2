@@ -44,6 +44,12 @@ const TaskList = () => {
 
   const addOrUpdateTask = async (task) => {
     const token = localStorage.getItem('token');
+
+    if (!token) {
+      console.error("Token non trouvé");
+      return;
+    }
+
     const url = task.id
       ? `http://localhost:8000/api/tasks/${task.id}`
       : `http://localhost:8000/api/tasks`;
@@ -58,7 +64,9 @@ const TaskList = () => {
         body: JSON.stringify(task),
       });
 
-      if (!res.ok) throw new Error('Échec création/modification');
+      if (!res.ok) {
+        throw new Error('Échec création/modification');
+      }
 
       fetchTasks();
       setEditingTask(null);
@@ -71,6 +79,9 @@ const TaskList = () => {
     try {
       await fetch(`http://localhost:8000/api/tasks/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
       });
       fetchTasks();
     } catch (error) {
@@ -78,29 +89,38 @@ const TaskList = () => {
     }
   };
 
-  const toggleTask = async (id) => {
+  const toggleTask = async (taskId) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/tasks/toggle/${id}`, {
+      const res = await fetch(`http://localhost:8000/api/tasks/toggle/${taskId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
+        credentials: 'include',
       });
 
-      if (!res.ok) throw new Error('Échec du toggle');
+      if (!res.ok) {
+        throw new Error('Erreur lors de la mise à jour de la tâche');
+      }
 
-      fetchTasks();
+      const updatedTask = await res.json();
+      console.log('✅ Tâche mise à jour :', updatedTask);
+
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.id === updatedTask.id ? updatedTask : task
+        )
+      );
     } catch (error) {
       console.error('❌ Erreur toggle tâche:', error);
     }
   };
 
-  // Liste des utilisateurs uniques (à partir des tâches)
   const users = [...new Set(tasks.map((t) => t.user?.name).filter(Boolean))];
 
   const filteredTasks = tasks.filter((task) => {
     const isDone = !!task.completed;
-
     const matchFilter =
       (filter === 'completed' && isDone) ||
       (filter === 'pending' && !isDone) ||
@@ -144,7 +164,6 @@ const TaskList = () => {
           </button>
         ))}
 
-        {/* 🎛️ Filtre par utilisateur */}
         {users.length > 0 && (
           <select
             className="px-4 py-1.5 border border-gray-200 rounded-full text-sm text-gray-700"
@@ -162,7 +181,7 @@ const TaskList = () => {
       </div>
 
       {/* 📋 Liste */}
-      <div className="space-y-4">
+      <div className="space-y-4 transition-all duration-300 ease-in-out">
         {loading ? (
           <div className="text-center text-gray-400 italic">Chargement…</div>
         ) : error ? (

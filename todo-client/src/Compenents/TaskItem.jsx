@@ -3,22 +3,35 @@ import React from 'react';
 const TaskItem = ({ task, onEdit, onDelete, onToggle }) => {
   return (
     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition flex justify-between items-start gap-4">
-      <div className="flex-1">
-        {/* Checkbox pour marquer la tâche comme terminée */}
+      <div className="flex-1 flex items-start">
+        {/* Checkbox */}
         <input
           type="checkbox"
-          checked={task.completed} // Cette valeur détermine si la case est cochée ou non
-          onChange={() => onToggle(task.id)} // Appel de la fonction onToggle pour basculer l'état
-          className="mr-3 mt-1 h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+          checked={task.completed}
+          onChange={() => onToggle(task.id)}
+          className="mr-4 mt-1 h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
         />
-        <h3 className={`text-lg font-semibold ${task.completed ? ' text-gray-900' : 'text-gray-900'} mb-1`}>
-          {task.title}
-        </h3>
-        <p className={`text-sm ${task.completed ? 'text-gray-600' : 'text-gray-600'} whitespace-pre-line`}>
-          {task.description}
-        </p>
+
+        {/* Titre et description */}
+        <div>
+          <h3
+            className={`text-lg font-semibold mb-1 ${
+              task.completed ? 'line-through text-gray-500' : 'text-gray-900'
+            }`}
+          >
+            {task.title}
+          </h3>
+          <p
+            className={`text-sm whitespace-pre-line ${
+              task.completed ? 'text-gray-400 line-through' : 'text-gray-700'
+            }`}
+          >
+            {task.description}
+          </p>
+        </div>
       </div>
 
+      {/* Boutons actions */}
       <div className="flex flex-col sm:flex-row gap-2 items-end sm:items-center">
         <button
           onClick={() => onEdit(task)}
