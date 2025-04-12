@@ -12,30 +12,34 @@ function Dashboard() {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    fetch('http://localhost:8000/api/me', {
-      credentials: 'include',
-    })
-      .then((res) => res.json())
-      .then((data) => setUser(data))
-      .catch((err) => console.error('Erreur user:', err));
-  }, []);
-
+  
+    const handleLogout = async () => {
+      try {
+        const token = localStorage.getItem('token'); // ou wherever you store it
+    
+        await fetch('http://localhost:8000/api/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+          },
+        });
+    
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      } catch (error) {
+        console.error('Erreur lors de la déconnexion:', error);
+      }
+    };
+     
+ 
   return (
     <div className="flex h-screen bg-gray-50 font-sans">
       {/* Sidebar */}
-      <div
-        className={`bg-blue-800 text-white transition-all duration-300 ${
-          sidebarOpen ? 'w-64' : 'w-20'
-        }`}
-      >
+      <div className={`bg-blue-800 text-white transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'}`}>
         <div className="p-4 flex items-center justify-between border-b border-blue-700">
           <h1 className="text-xl font-bold">{sidebarOpen ? 'AdminPro' : 'AP'}</h1>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1 rounded-lg hover:bg-blue-700"
-          >
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 rounded-lg hover:bg-blue-700">
             <FiMenu size={20} />
           </button>
         </div>
@@ -65,28 +69,23 @@ function Dashboard() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Navigation */}
+        {/* Topbar */}
         <header className="bg-white border-b border-gray-200 flex items-center justify-between p-4">
-          <div className="flex items-center">
-            <div className="relative">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-              />
-            </div>
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search..."
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+            />
           </div>
 
           <div className="flex items-center space-x-4">
             {/* Notifications */}
             <div className="relative">
-              <button
-                onClick={() => setNotificationOpen(!notificationOpen)}
-                className="p-2 rounded-full hover:bg-gray-100 relative"
-              >
+              <button onClick={() => setNotificationOpen(!notificationOpen)} className="p-2 rounded-full hover:bg-gray-100 relative">
                 <FiBell size={20} className="text-gray-600" />
-                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500" />
               </button>
 
               {notificationOpen && (
@@ -110,37 +109,32 @@ function Dashboard() {
 
             {/* Profile */}
             <div className="relative">
-              <button
-                onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center space-x-2 focus:outline-none"
-              >
+              <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center space-x-2 focus:outline-none">
                 <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
-                  {user?.name?.charAt(0).toUpperCase() }
+                  {user?.name?.charAt(0).toUpperCase()}
                 </div>
                 {sidebarOpen && (
                   <>
                     <span className="text-gray-700">{user?.name}</span>
                     <FiChevronDown
-                      className={`text-gray-500 transition-transform ${
-                        profileOpen ? 'rotate-180' : ''
-                      }`}
+                      className={`text-gray-500 transition-transform ${profileOpen ? 'rotate-180' : ''}`}
                     />
                   </>
                 )}
               </button>
 
               {profileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-10">
-                  <div className="p-3 border-b border-gray-200">
-                    <p className="text-sm font-medium">{user?.name || '...'}</p>
-                    <p className="text-xs text-gray-500 capitalize">
-                      {user?.role || 'client'}
-                    </p>
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-10">
+                  <div className="bg-white p-4 border-b">
+                    <h2 className="text-md font-semibold">Bienvenue, {user?.name || 'Utilisateur'}</h2>
+                    <p className="text-sm text-gray-500">Rôle : {user?.role || 'Client'}</p>
                   </div>
-                  <div className="p-1">
-                    <a href="#" className="block px-3 py-2 text-sm hover:bg-gray-100 rounded">Profile</a>
-                    <a href="#" className="block px-3 py-2 text-sm hover:bg-gray-100 rounded">Settings</a>
-                    <a href="#" className="block px-3 py-2 text-sm hover:bg-gray-100 rounded">Logout</a>
+                  <div className="p-2">
+                    <a href="#" className="block px-3 py-2 text-sm hover:bg-gray-100 rounded">Profil</a>
+                    <a href="#" className="block px-3 py-2 text-sm hover:bg-gray-100 rounded">Paramètres</a>
+                    <a href="#" onClick={(e) => { e.preventDefault();  handleLogout(); }}
+                         className="block px-3 py-2 text-sm hover:bg-gray-100 rounded"> Déconnexion
+                    </a>
                   </div>
                 </div>
               )}
@@ -148,7 +142,7 @@ function Dashboard() {
           </div>
         </header>
 
-        {/* Main Content Area */}
+        {/* Content */}
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
           <div className="mb-6 flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
@@ -189,12 +183,12 @@ function Dashboard() {
             ))}
           </div>
 
-          {/* Task List */}
-          <div className='w-full bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6'>
-             <TaskList />
+          {/* Task List Section */}
+          <div className="w-full">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <TaskList />
+            </div>
           </div>
-
-          {/* (Remaining layout unchanged, charts, recent activity, tables, etc.) */}
         </main>
       </div>
     </div>

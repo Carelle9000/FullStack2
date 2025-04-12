@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 
 class AuthController extends Controller
@@ -56,13 +57,14 @@ class AuthController extends Controller
         ]);
     }
 
-    // 🔓 Déconnexion
-    public function logout(Request $request)
-    {
-        $request->user()->currentAccessToken()->delete();
+    // 🔓 Déconnexionpublic 
+    function logout(Request $request)
+   {
+    // Si tu es en token-based auth (ex: Laravel Passport ou Sanctum en mode token)
+    $request->user()->tokens()->delete(); // supprime tous les tokens
 
-        return response()->json(['message' => 'Déconnexion réussie']);
-    }
+    return response()->json(['message' => 'Déconnecté avec succès.']);
+   }
 
     // 👤 Récupérer l'utilisateur connecté
     public function user(Request $request)
